@@ -1,0 +1,69 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        environment: [qa, cert]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+
+    - name: Create .env file
+      run: |
+        echo "SECRET_KEY=${{ secrets[format('SECRET_KEY_{0}', matrix.environment)] }}" > .env.${{ matrix.environment }}
+
+    - name: Run API Tests
+      run: npm run test:${{ matrix.environment }} -- --grep "@smoke|@regression" tests/api/
+      continue-on-error: false
+
+    - name: Run Web Tests
+      run: npm run test:${{ matrix.environment }} -- --grep "@wiki" tests/web/
+      continue-on-error: false
+
+    - name: Upload Playwright Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-${{ matrix.environment }}
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.environment }}
+        path: test-results/
+        retention-days: 30
+
+    - name: Upload Downloaded Images
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pokemon-images-${{ matrix.environment }}
+        path: images/
+        retention-days: 7
