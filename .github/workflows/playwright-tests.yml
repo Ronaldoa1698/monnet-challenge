@@ -26,7 +26,6 @@ on:
           - regression
           - negative
           - performance
-          - validation
           - wiki
           - id
           - name

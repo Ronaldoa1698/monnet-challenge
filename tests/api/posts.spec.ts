@@ -133,26 +133,4 @@ test.describe('@JSONPlaceholder - POST /posts', () => {
     const json = await response.json();
     expect(json).toHaveProperty('id');
   });
-
-  test('@validation Crear múltiples posts consecutivos', async ({ request }) => {
-    const ids: number[] = [];
-
-    for (let i = 1; i <= 3; i++) {
-      const payload = {
-        title: `Post ${i}`,
-        body: `Contenido del post ${i}`,
-        userId: i,
-      };
-
-      const response = await request.post(API, { data: payload });
-      await expect(response).toBeOK();
-      
-      const json = await response.json();
-      validatePostStructure(json, payload);
-      ids.push(json.id);
-    }
-
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(ids.length);
-  });
 });

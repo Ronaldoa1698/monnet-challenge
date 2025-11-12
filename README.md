@@ -227,7 +227,6 @@ monnet-challenge/
 | `@regression` | Tests de regresión | `posts.spec.ts` |
 | `@negative` | Tests de casos negativos | `posts.spec.ts` |
 | `@performance` | Tests de performance | `posts.spec.ts` |
-| `@validation` | Tests de validación | `posts.spec.ts` |
 | `@id` | Búsqueda por ID | `pokemon.spec.ts` |
 | `@name` | Búsqueda por nombre | `pokemon.spec.ts` |
 | `@abilities` | Validación de habilidades | `pokemon.spec.ts` |
