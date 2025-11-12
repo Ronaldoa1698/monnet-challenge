@@ -6,6 +6,41 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        type: choice
+        options:
+          - qa
+          - cert
+          - both
+        default: 'qa'
+      
+      tags:
+        description: 'Test tags to run'
+        required: true
+        type: choice
+        options:
+          - all
+          - smoke
+          - regression
+          - negative
+          - wiki
+          - api
+          - smoke|regression
+          - smoke|wiki
+        default: 'all'
+      
+      test_scope:
+        description: 'Test scope'
+        required: true
+        type: choice
+        options:
+          - all
+          - api-only
+          - web-only
+        default: 'all'
 
 jobs:
   test:
