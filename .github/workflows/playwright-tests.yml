@@ -107,6 +107,7 @@ jobs:
         name: test-results-${{ steps.filter.outputs.environment }}-${{ github.event.inputs.tags || 'all' }}
         path: test-results/
         retention-days: 30
+        if-no-files-found: ignore
 
     - name: Upload Downloaded Images
       uses: actions/upload-artifact@v4
