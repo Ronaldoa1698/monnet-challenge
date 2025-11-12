@@ -3,13 +3,22 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test:qa": "dotenv -e .env.qa -- npx playwright test --project=qa",
+    "test:cert": "dotenv -e .env.cert -- npx playwright test --project=cert",
+    "report": "npx playwright show-report"
+  },
   "keywords": [],
   "author": "Ronaldo Delgado Jara",
   "email": "ronaldoa1698@gmail.com",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.56.1",
-    "@types/node": "^24.10.0"
+    "@types/node": "^24.10.0",
+    "dotenv-cli": "^11.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "xlsx": "^0.18.5"
   }
 }
