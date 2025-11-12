@@ -14,7 +14,6 @@ on:
         options:
           - qa
           - cert
-          - both
         default: 'qa'
       
       tags:
@@ -26,30 +25,18 @@ on:
           - smoke
           - regression
           - negative
+          - performance
+          - validation
           - wiki
-          - api
-          - smoke|regression
-          - smoke|wiki
-        default: 'all'
-      
-      test_scope:
-        description: 'Test scope'
-        required: true
-        type: choice
-        options:
-          - all
-          - api-only
-          - web-only
+          - id
+          - name
+          - abilities
         default: 'all'
 
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        environment: [qa, cert]
     
     steps:
     - name: Checkout repository
@@ -65,25 +52,51 @@ jobs:
       run: npm ci
 
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps chromium
 
     - name: Create .env file
       run: |
-        echo "SECRET_KEY=${{ secrets[format('SECRET_KEY_{0}', matrix.environment)] }}" > .env.${{ matrix.environment }}
+        ENVIRONMENT="${{ github.event.inputs.environment || 'qa' }}"
+        echo "SECRET_KEY=${{ secrets[format('SECRET_KEY_{0}', github.event.inputs.environment || 'qa')] }}" > .env.$ENVIRONMENT
 
-    - name: Run API Tests
-      run: npm run test:${{ matrix.environment }} -- --grep "@smoke|@regression" tests/api/
-      continue-on-error: false
+    - name: Determine test filter
+      id: filter
+      run: |
+        TAGS="${{ github.event.inputs.tags || 'all' }}"
+        ENVIRONMENT="${{ github.event.inputs.environment || 'qa' }}"
+        
+        if [ "$TAGS" = "all" ]; then
+          GREP_PATTERN=""
+        else
+          GREP_PATTERN="@${TAGS}"
+        fi
+        
+        echo "grep_pattern=$GREP_PATTERN" >> $GITHUB_OUTPUT
+        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+        
+        echo "::notice:: Running tests with:"
+        echo "::notice::  Environment: $ENVIRONMENT"
+        echo "::notice::  Tags: $TAGS"
 
-    - name: Run Web Tests
-      run: npm run test:${{ matrix.environment }} -- --grep "@wiki" tests/web/
+    - name: Run Tests
+      run: |
+        ENVIRONMENT="${{ steps.filter.outputs.environment }}"
+        GREP="${{ steps.filter.outputs.grep_pattern }}"
+        
+        if [ -z "$GREP" ]; then
+          npm run test:$ENVIRONMENT
+        else
+          npm run test:$ENVIRONMENT -- --grep "$GREP"
+        fi
       continue-on-error: false
+      env:
+        CI: true
 
     - name: Upload Playwright Report
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report-${{ matrix.environment }}
+        name: playwright-report-${{ steps.filter.outputs.environment }}-${{ github.event.inputs.tags || 'all' }}
         path: playwright-report/
         retention-days: 30
 
@@ -91,7 +104,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-results-${{ matrix.environment }}
+        name: test-results-${{ steps.filter.outputs.environment }}-${{ github.event.inputs.tags || 'all' }}
         path: test-results/
         retention-days: 30
 
@@ -99,6 +112,15 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: pokemon-images-${{ matrix.environment }}
+        name: pokemon-images-${{ steps.filter.outputs.environment }}
         path: images/
         retention-days: 7
+
+    - name: Test Summary
+      if: always()
+      run: |
+        echo "## Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment:** \`${{ steps.filter.outputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tags:** \`${{ github.event.inputs.tags || 'all' }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
